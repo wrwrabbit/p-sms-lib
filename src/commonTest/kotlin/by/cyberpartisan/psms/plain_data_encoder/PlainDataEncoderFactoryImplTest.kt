@@ -18,16 +18,23 @@ class PlainDataEncoderFactoryImplTest {
     @Test
     fun testCreateCp1251() {
         testCreateBest("абвгдАБВГДabcdeABCDE", Mode.CP1251)
+        testCreateBest("строка1\r\nстрока2", Mode.CP1251)
+        testCreateBest("СТРОКА1\r\nстрока2", Mode.CP1251)
     }
 
     @Test
     fun testCreateShortLatin() {
-        testCreateBest("абвгдabcdeABCDE", Mode.LATIN)
+        testCreateBest("абвгдabcdeABCDE", Mode.SHORT_CP1251_PREFER_LATIN)
     }
 
     @Test
     fun testCreateShortCyrillic() {
-        testCreateBest("абвгдАБВГДabcde", Mode.CYRILLIC)
+        testCreateBest("абвгдАБВГДabcde", Mode.SHORT_CP1251_PREFER_CYRILLIC)
+    }
+
+    @Test
+    fun testCreateAscii() {
+        testCreateBest("line1\r\nline2", Mode.ASCII)
     }
 
     @Test

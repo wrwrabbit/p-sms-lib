@@ -4,9 +4,10 @@ class PlainDataEncoderFactoryImpl: PlainDataEncoderFactory {
     @ExperimentalUnsignedTypes
     override fun create(mode: Int) : PlainDataEncoder {
         return when (mode) {
-            Mode.LATIN.ordinal -> ShortCp1251Latin()
-            Mode.CYRILLIC.ordinal -> ShortCp1251Cyrillic()
+            Mode.SHORT_CP1251_PREFER_LATIN.ordinal -> ShortCp1251Latin()
+            Mode.SHORT_CP1251_PREFER_CYRILLIC.ordinal -> ShortCp1251Cyrillic()
             Mode.CP1251.ordinal -> Cp1251()
+            Mode.ASCII.ordinal -> Ascii()
             Mode.HUFFMAN_CYRILLIC.ordinal -> HuffmanCyrillic()
             else -> Utf8()
         }

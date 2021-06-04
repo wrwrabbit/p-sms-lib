@@ -21,5 +21,5 @@ class ShortCp1251Latin : ShortEncoder() {
         }
     }
 
-    override fun getMode(): Int = Mode.LATIN.ordinal
+    override fun getMode(): Int = Mode.SHORT_CP1251_PREFER_LATIN.ordinal
 }

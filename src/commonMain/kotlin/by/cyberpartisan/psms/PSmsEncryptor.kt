@@ -12,7 +12,7 @@ import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactoryImpl
 
 const val HASH_SIZE = 2
 
-class PSmsEncryptor {
+public class PSmsEncryptor {
 
     private val plainDataEncoderFactory: PlainDataEncoderFactory
     private var plainDataEncoder: PlainDataEncoder? = null

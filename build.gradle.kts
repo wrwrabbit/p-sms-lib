@@ -4,7 +4,7 @@ plugins {
     id("kotlin-android-extensions")
 }
 
-group = "by.cyberpartisan"
+group = "io.github"
 version = "1.0"
 
 repositories {
@@ -55,7 +55,7 @@ android {
     compileSdkVersion(29)
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
-        minSdkVersion(24)
+        minSdkVersion(21)
         targetSdkVersion(29)
     }
 }

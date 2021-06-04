@@ -35,5 +35,5 @@ class ShortCp1251Cyrillic : ShortEncoder() {
         }
     }
 
-    override fun getMode(): Int = Mode.CYRILLIC.ordinal
+    override fun getMode(): Int = Mode.SHORT_CP1251_PREFER_CYRILLIC.ordinal
 }
