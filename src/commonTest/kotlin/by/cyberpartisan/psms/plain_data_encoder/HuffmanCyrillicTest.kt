@@ -18,7 +18,7 @@ class HuffmanCyrillicTest : AbstractNotAlignedEncoderTest() {
 
     @Test
     fun testMultipleChar() {
-        testEncodeDecode("Ёё", bytes(0x8D, 0xF3, 0x8A, 0xF0), "Ёё")
+        testEncodeDecode("Ёё", bytes(0x8D, 0xF3, 0x8A, 0xF0))
     }
 
     @Test

@@ -41,4 +41,9 @@ class PlainDataEncoderFactoryImplTest {
     fun testCreateHuffmanCyrillic() {
         testCreateBest("О о о о о ", Mode.HUFFMAN_CYRILLIC)
     }
+
+    @Test
+    fun testCreateHuffmanLatin() {
+        testCreateBest("S s s s s ", Mode.HUFFMAN_LATIN)
+    }
 }
