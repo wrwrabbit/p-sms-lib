@@ -9,6 +9,7 @@ class PlainDataEncoderFactoryImpl: PlainDataEncoderFactory {
             Mode.CP1251.ordinal -> Cp1251()
             Mode.ASCII.ordinal -> Ascii()
             Mode.HUFFMAN_CYRILLIC.ordinal -> HuffmanCyrillic()
+            Mode.HUFFMAN_LATIN.ordinal -> HuffmanLatin()
             else -> Utf8()
         }
     }

@@ -7,4 +7,5 @@ enum class Mode {
     UTF_8,
     ASCII,
     HUFFMAN_CYRILLIC,
+    HUFFMAN_LATIN,
 }

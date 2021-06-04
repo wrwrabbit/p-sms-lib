@@ -46,7 +46,7 @@ abstract class NotAlignedEncoder: PlainDataEncoder {
         while (data.size * 8 - currentOffset >= decodingShifting) {
             val byteIndex = currentOffset / 8
             val byteOffset = currentOffset % 8
-            if (byteIndex == data.size - 1 && 8 - (getLeastSignificantBitOffset(data[byteIndex]) + 1) < decodingShifting) {
+            if (byteIndex == data.size - 1 && 8 - (getLeastSignificantBitOffset(data[byteIndex]) + 1) < byteOffset + decodingShifting) {
                 break
             }
             var value = (data[byteIndex].toInt() and (0xFF shr byteOffset))
