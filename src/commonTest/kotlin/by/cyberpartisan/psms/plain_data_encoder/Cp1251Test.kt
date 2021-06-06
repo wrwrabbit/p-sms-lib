@@ -13,12 +13,21 @@ class Cp1251Test : AbstractPlainDataEncoderTest() {
 
     @Test
     fun testSingleChar() {
-        testEncodeDecode("ё", bytes(0xB8))
+            testEncodeDecode("ё", bytes(0xB8))
     }
 
     @Test
     fun testMultipleChar() {
         testEncodeDecode("µ…x", bytes(0xB5, 0x85, 0x78))
+    }
+
+    @Test
+    fun testFullCharset() {
+        val src = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyz" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ !\"#\$%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~ЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏ ЎўЈ¤Ґ¦§©Є«¬\u00AD®Ї"
+        val dest = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯabcdefghijklmnopqrstuvwxyz" +
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ !\"#\$%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~ЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏ ЎўЈ¤Ґ¦§©Є«¬\u00AD®Ї"
+        testEncodeDecode(src, expectedDecoded = dest)
     }
 
     @Test
