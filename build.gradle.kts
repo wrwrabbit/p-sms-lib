@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.4.32"
+    kotlin("multiplatform") version "1.5.10"
     id("com.android.library")
     id("kotlin-android-extensions")
 }
@@ -14,18 +14,19 @@ repositories {
 }
 
 kotlin {
-    android()
-    iosX64("ios") {
+    iosArm64("ios") {
         binaries {
             framework {
-                baseName = "library"
+                baseName = "p_sms"
             }
         }
     }
+    android()
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation("com.ionspin.kotlin:bignum:0.3.1")
+                implementation("com.soywiz.korlibs.krypto:krypto:2.1.1")
             }
         }
         val commonTest by getting {
@@ -46,8 +47,9 @@ kotlin {
                 implementation("junit:junit:4.13")
             }
         }
-        val iosMain by getting
-        val iosTest by getting
+        val iosMain by getting {
+            dependsOn(commonMain)
+        }
     }
 }
 
@@ -59,3 +61,9 @@ android {
         targetSdkVersion(29)
     }
 }
+
+tasks.withType<Wrapper> {
+    gradleVersion = "5.3.1"
+    distributionType = Wrapper.DistributionType.ALL
+}
+
