@@ -60,6 +60,7 @@ android {
         minSdkVersion(21)
         targetSdkVersion(29)
     }
+
 }
 
 tasks.withType<Wrapper> {

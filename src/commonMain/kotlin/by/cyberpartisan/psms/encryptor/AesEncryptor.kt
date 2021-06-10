@@ -1,5 +1,4 @@
 package by.cyberpartisan.psms.encryptor
-
 import com.soywiz.krypto.AES
 import kotlin.random.Random
 import com.soywiz.krypto.Padding
