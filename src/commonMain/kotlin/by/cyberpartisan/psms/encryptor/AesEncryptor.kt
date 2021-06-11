@@ -10,7 +10,7 @@ class AesEncryptor() : Encryptor {
         val ivSrc = ByteArray(IV_SIZE)
         Random.nextBytes(ivSrc)
         val iv = ivSrc + ivSrc + ivSrc + ivSrc
-        return AES.encryptAesCfb(plainData, key, iv, Padding.NoPadding)
+        return AES.encryptAesCfb(plainData, key, iv, Padding.NoPadding) + ivSrc
     }
     override fun decrypt(key: ByteArray, encryptedData: ByteArray): ByteArray {
         val payload = encryptedData.slice(0 until encryptedData.size - 4).toByteArray()
