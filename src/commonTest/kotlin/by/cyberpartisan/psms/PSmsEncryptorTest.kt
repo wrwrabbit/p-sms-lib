@@ -5,10 +5,7 @@ import by.cyberpartisan.psms.encrypted_data_encoder.EncryptedDataEncoderFactory
 import by.cyberpartisan.psms.encryptor.Encryptor
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 @ExperimentalUnsignedTypes
 class PSmsEncryptorTest {
@@ -115,7 +112,7 @@ class PSmsEncryptorTest {
         val encodedModified = modifyEncoded(encoded)
         assertEquals(false, pSmsEncryptor.isEncrypted(encodedModified, ByteArray(0)), "Modification ignored by isEncrypted.")
         assertEquals(encodedModified, pSmsEncryptor.tryDecode(encodedModified, ByteArray(0)), "Modification ignored by tryDecode.")
-        assertFails { pSmsEncryptor.decode(encodedModified, ByteArray(0), 0) }
+        assertFailsWith<InvalidSignatureException> { pSmsEncryptor.decode(encodedModified, ByteArray(0), 0) }
     }
 
     @Test

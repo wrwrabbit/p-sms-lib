@@ -1,9 +1,6 @@
 package by.cyberpartisan.psms.encryptor
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertNotEquals
+import kotlin.test.*
 
 class AesEncryptorTest {
     private fun testEncryptDecrypt(data: ByteArray, key: ByteArray) {
@@ -54,16 +51,19 @@ class AesEncryptorTest {
 
     @Test
     fun testEmptyKey() {
-        assertFails { AesEncryptor().encrypt(ByteArray(0), ByteArray(0)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().encrypt(ByteArray(0), ByteArray(0)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().decrypt(ByteArray(0), ByteArray(0)) }
     }
 
     @Test
     fun testSmallKey() {
-        assertFails { AesEncryptor().encrypt(ByteArray(0), ByteArray(5)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().encrypt(ByteArray(0), ByteArray(5)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().decrypt(ByteArray(0), ByteArray(0)) }
     }
 
     @Test
     fun testBigKey() {
-        assertFails { AesEncryptor().encrypt(ByteArray(0), ByteArray(256 / 8 + 1)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().encrypt(ByteArray(0), ByteArray(256 / 8 + 1)) }
+        assertFailsWith<InvalidKeyException> { AesEncryptor().decrypt(ByteArray(0), ByteArray(0)) }
     }
 }
