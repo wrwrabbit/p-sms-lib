@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 class PSmsEncryptorIntegrationTest {
     private fun testEncodeDecode(str: String, keySrc: String) {
         val pSmsEncryptor = PSmsEncryptor()
-        val key = keySrc.encodeToByteArray()//md5(keySrc.encodeToByteArray())
+        val key = md5(keySrc.encodeToByteArray())
         val encoded = pSmsEncryptor.encode(str, key, 0)
         assertTrue(pSmsEncryptor.isEncrypted(encoded, key), "String must be encrypted.")
         val decoded = pSmsEncryptor.decode(encoded, key, 0)
