@@ -86,4 +86,18 @@ public class PSmsEncryptor {
         }
         return str
     }
+
+    public fun encode(str: String, stringKey: String): String {
+        val byteKey = md5(stringKey.encodeToByteArray())
+        val encoded = encode(str, byteKey, 0)
+        return encoded
+    }
+
+
+    public fun tryDecode(str: String, stringKey: String): String {
+        val byteKey = md5(stringKey.encodeToByteArray())
+        val decoded = tryDecode(str, byteKey)
+        return decoded
+    }
+
 }
