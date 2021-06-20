@@ -22,6 +22,13 @@ kotlin {
         }
     }
     android()
+    linuxX64("python") {
+        binaries {
+            sharedLib {
+                baseName = "p_sms"
+            }
+        }
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {

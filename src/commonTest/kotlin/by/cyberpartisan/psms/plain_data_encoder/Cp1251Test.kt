@@ -32,6 +32,6 @@ class Cp1251Test : AbstractPlainDataEncoderTest() {
 
     @Test
     fun testInvalidEncoding() {
-        assertEquals('?'.toByte(), encoder().encode("π")[0], "Incorrect unknown char encoding.")
+        assertEquals('?'.code.toByte(), encoder().encode("π")[0], "Incorrect unknown char encoding.")
     }
 }

@@ -87,17 +87,19 @@ public class PSmsEncryptor {
         return str
     }
 
-    public fun encode(str: String, stringKey: String): String {
+    public fun encode(str: String, stringKey: String, encryptionSchemeId: Int): String {
         val byteKey = md5(stringKey.encodeToByteArray())
-        val encoded = encode(str, byteKey, 0)
-        return encoded
+        return encode(str, byteKey, encryptionSchemeId)
     }
 
 
     public fun tryDecode(str: String, stringKey: String): String {
         val byteKey = md5(stringKey.encodeToByteArray())
-        val decoded = tryDecode(str, byteKey)
-        return decoded
+        return tryDecode(str, byteKey)
     }
 
+    public fun isEncrypted(str: String, stringKey: String): Boolean {
+        val byteKey = md5(stringKey.encodeToByteArray())
+        return isEncrypted(str, byteKey)
+    }
 }

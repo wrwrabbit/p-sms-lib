@@ -152,4 +152,12 @@ class PSmsEncryptorTest {
         testNotEncrypted("00000000")
     }
 
+    @Test
+    fun testStringMethods() {
+        val pSmsEncryptor = createPSmsEncryptor()
+        val encoded = pSmsEncryptor.encode("a", "key", 0)
+        assertEquals(pSmsEncryptor.tryDecode(encoded, "key"), "a", "Encoded and decoded strings are different.")
+        assertTrue(pSmsEncryptor.isEncrypted(encoded, "key"), "String must be encrypted.")
+    }
+
 }
