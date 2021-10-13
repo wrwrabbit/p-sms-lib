@@ -18,21 +18,22 @@ class TextEncoder(
     }
 
     override fun encode(data: ByteArray): String {
-        val targetSize = BigInteger.ONE shl data.size * 8
-        var currentSize = BigInteger.ONE
+        val targetBitCount = BigInteger.ONE shl (data.size * 8)
+        var currentBitCount = BigInteger.ONE
         var currentValue = BigInteger.fromByteArray(data, Sign.POSITIVE)
         val words = ArrayList<EncodeResult>()
-        while (currentSize < targetSize) {
+        while (currentBitCount < targetBitCount) {
+            // needSpaceBefore is checked to avoid "word)(,. word"
             val subEncoderList = if (words.isNotEmpty() && words.last().needSpaceBefore && words.last().needSpaceAfter) subEncoders else spacedSubEncoders
             val subEncoder = subEncoderList[(currentValue % subEncoderList.size).intValue()]
             currentValue /= subEncoderList.size
-            currentSize *= subEncoderList.size
-            val remainingSize = targetSize / currentSize + if (targetSize % currentSize > 0) 1 else 0
+            currentBitCount *= subEncoderList.size
+            val remainingSize = targetBitCount / currentBitCount + if (targetBitCount % currentBitCount > 0) 1 else 0
             val result = subEncoder.encode(currentValue, remainingSize)
             words.add(result)
             if (result.size != BigInteger.ZERO) {
                 currentValue /= result.size
-                currentSize *= result.size
+                currentBitCount *= result.size
             }
         }
         var result = ""

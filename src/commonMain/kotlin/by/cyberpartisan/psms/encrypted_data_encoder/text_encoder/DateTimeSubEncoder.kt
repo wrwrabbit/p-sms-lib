@@ -16,7 +16,7 @@ class DateTimeSubEncoder: SubEncoder {
         val monthSizes = listOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
         var day = value
         var month = 0
-        while (value < monthSizes[month]) {
+        while (day < monthSizes[month]) {
             day -= monthSizes[month]
             month++
         }
