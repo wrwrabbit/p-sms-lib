@@ -2,29 +2,24 @@ package by.cyberpartisan.psms.encrypted_data_encoder.text_encoder
 
 import com.ionspin.kotlin.bignum.integer.BigInteger
 
+const val chars = ",:().?!"
+
 class PunctuationSubEncoder : SubEncoder {
-    override fun encode(currentValue: BigInteger, remainingSize: BigInteger): EncodeResult {
-        return if (currentValue == BigInteger.ZERO) {
-            when {
-                remainingSize <= BigInteger(1) -> {
-                    EncodeResult(BigInteger(0), ".", needSpaceBefore = false)
-                }
-                remainingSize <= BigInteger(8) -> {
-                    EncodeResult(BigInteger(8), "?", needSpaceBefore = false)
-                }
-                else -> {
-                    EncodeResult(BigInteger(8 * 8), "!", needSpaceBefore = false)
-                }
-            }
-        } else {
-            when ((currentValue % 4).intValue()) {
-                0 -> EncodeResult(BigInteger(8), ",", needSpaceBefore = false)
-                1 -> EncodeResult(BigInteger(8), ":", needSpaceBefore = false)
-                2 -> EncodeResult(BigInteger(8), "(", needSpaceBefore = false)
-                3 -> EncodeResult(BigInteger(8), ")", needSpaceBefore = false)
-                else -> throw Exception()
-            }
+    override fun encode(currentValue: BigInteger): EncodeResult {
+        return when ((currentValue % chars.length).intValue()) {
+            0 -> EncodeResult(BigInteger(chars.length), ",", needSpaceBefore = false)
+            1 -> EncodeResult(BigInteger(chars.length), ":", needSpaceBefore = false)
+            2 -> EncodeResult(BigInteger(chars.length), "(", needSpaceBefore = false)
+            3 -> EncodeResult(BigInteger(chars.length), ")", needSpaceBefore = false)
+            4 -> EncodeResult(BigInteger(chars.length), ".", needSpaceBefore = false)
+            5 -> EncodeResult(BigInteger(chars.length), "?", needSpaceBefore = false)
+            6 -> EncodeResult(BigInteger(chars.length), "!", needSpaceBefore = false)
+            else -> throw Exception()
         }
     }
 
+    override fun decode(str: String, index: Int): DecodeResult? {
+        val charIndex = chars.indexOf(str[index])
+        return if (charIndex != -1) DecodeResult(BigInteger(chars.length), charIndex, index + 1) else null
+    }
 }

@@ -10,17 +10,23 @@ class TextEncoder(
 
     private val subEncoders = nonSpacesSubEncoders + spacedSubEncoders
 
-    constructor() : this(listOf(PunctuationSubEncoder()),
+    private constructor() : this(listOf(PunctuationSubEncoder()),
         listOf(DateTimeSubEncoder()) +
                 WordsSubEncoderInstances.instances +
                 WordsSubEncoderInstances9.instances +
                 WordsSubEncoderInstances10.instances) {
     }
 
+    companion object {
+        val instance: TextEncoder by lazy {
+            TextEncoder()
+        }
+    }
+
     override fun encode(data: ByteArray): String {
-        val targetBitCount = BigInteger.ONE shl (data.size * 8)
+        val targetBitCount = BigInteger.ONE shl ((data.size + 1) * 8)
         var currentBitCount = BigInteger.ONE
-        var currentValue = BigInteger.fromByteArray(data, Sign.POSITIVE)
+        var currentValue = BigInteger.fromByteArray(data.reversedArray(), Sign.POSITIVE)
         val words = ArrayList<EncodeResult>()
         while (currentBitCount < targetBitCount) {
             // needSpaceBefore is checked to avoid "word)(,. word"
@@ -28,8 +34,7 @@ class TextEncoder(
             val subEncoder = subEncoderList[(currentValue % subEncoderList.size).intValue()]
             currentValue /= subEncoderList.size
             currentBitCount *= subEncoderList.size
-            val remainingSize = targetBitCount / currentBitCount + if (targetBitCount % currentBitCount > 0) 1 else 0
-            val result = subEncoder.encode(currentValue, remainingSize)
+            val result = subEncoder.encode(currentValue)
             words.add(result)
             if (result.size != BigInteger.ZERO) {
                 currentValue /= result.size
