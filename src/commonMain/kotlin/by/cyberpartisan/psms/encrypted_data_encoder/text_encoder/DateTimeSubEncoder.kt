@@ -24,7 +24,7 @@ class DateTimeSubEncoder: SubEncoder {
     private fun encodeAsDate(value: Int): String {
         var day = value
         var month = 0
-        while (day > monthSizes[month]) {
+        while (day >= monthSizes[month]) {
             day -= monthSizes[month]
             month++
         }
@@ -42,7 +42,7 @@ class DateTimeSubEncoder: SubEncoder {
         val parts = listOf(matchResult.groupValues[1].toInt(), matchResult.groupValues[2].toInt())
         val value = (if (substring[2] == ':') decodeTime(parts) else decodeDate(parts)) ?: return null
         val newPosition = if (str.length - index >= 6 && str[index + 5] == ' ') index + 6 else index + 5
-        return DecodeResult(BigInteger(size), value, newPosition)
+        return DecodeResult(size, value, newPosition)
     }
 
     private fun decodeTime(parts: List<Int>): Int? {

@@ -6,14 +6,18 @@ import kotlin.test.assertNotNull
 
 abstract class AbstractSubEncoderTest {
     protected fun testEncodeDecode(data: Int, expectedEncodeResult: EncodeResult) {
+        testEncodeDecode(BigInteger(data), expectedEncodeResult)
+    }
+
+    protected fun testEncodeDecode(data: BigInteger, expectedEncodeResult: EncodeResult) {
         val encoder = getEncoder()
-        val encodeResult = encoder.encode(BigInteger(data))
-        assertEquals(encodeResult, expectedEncodeResult, "Invalid encoded result.")
+        val encodeResult = encoder.encode(data)
+        assertEquals(expectedEncodeResult, encodeResult, "Invalid encoded result.")
         val decodedResult = encoder.decode(encodeResult.word, 0)
         assertNotNull(decodedResult, "Decoding error.")
-        assertEquals(decodedResult.size, encodeResult.size, "Invalid decoded size.")
-        assertEquals(decodedResult.value, data % encodeResult.size.intValue(), "Invalid decoded data.")
-        assertEquals(decodedResult.newPosition, encodeResult.word.length, "Invalid decode position.")
+        assertEquals(encodeResult.size.intValue(), decodedResult.size, "Invalid decoded size.")
+        assertEquals((data % encodeResult.size).intValue(), decodedResult.value, "Invalid decoded data.")
+        assertEquals(encodeResult.word.length, decodedResult.newPosition, "Invalid decode position.")
     }
 
     abstract fun getEncoder() : SubEncoder
