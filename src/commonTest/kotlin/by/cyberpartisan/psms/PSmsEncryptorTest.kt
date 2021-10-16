@@ -25,11 +25,13 @@ class PSmsEncryptorTest {
     private val plainFactory = PlainDataEncoderFactoryMock()
 
     class EncryptedDataEncoderMock : EncryptedDataEncoder {
+        override fun hasFrontPadding(): Boolean = false
+
         override fun encode(data: ByteArray): String {
             return data.asUByteArray().joinToString("") { it.toString(16).padStart(2, '0') }
         }
         override fun decode(str: String): ByteArray {
-            assertEquals(str.length % 2, 0, "String has odd length.")
+            assertEquals(0, str.length % 2, "String has odd length.")
             return str.chunked(2)
                 .map { it.toInt(16).toByte() }
                 .toByteArray()
@@ -160,4 +162,76 @@ class PSmsEncryptorTest {
         assertTrue(pSmsEncryptor.isEncrypted(encoded, "key"), "String must be encrypted.")
     }
 
+    class PaddingEncryptedDataEncoderMock : EncryptedDataEncoder {
+        val paddingSize = 2
+        override fun hasFrontPadding(): Boolean = true
+
+        override fun encode(data: ByteArray): String {
+            return "FF".repeat(paddingSize) + data.asUByteArray().joinToString("") { it.toString(16).padStart(2, '0') }
+        }
+        override fun decode(str: String): ByteArray {
+            assertEquals(0, str.length % 2, "String has odd length.")
+            return str.chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray()
+        }
+    }
+
+    class PaddedEncryptedDataEncoderFactoryMock : EncryptedDataEncoderFactory {
+        val encoder = PaddingEncryptedDataEncoderMock()
+        override fun create(schemeId: Int) : EncryptedDataEncoder = encoder
+    }
+
+    private val paddedEncryptedFactory = PaddedEncryptedDataEncoderFactoryMock()
+
+    private fun checkPaddedEncryptedData(plainString: String, data: ByteArray) {
+        val encoder = PlainDataEncoderMock()
+        val encodedStringSize = encoder.encode(plainString).size
+        assertEquals(encodedStringSize + 1 + HASH_SIZE + 1, data.size, "Invalid data size.")
+        val decodedString = encoder.decode(data.slice(0 until encodedStringSize).toByteArray())
+        assertEquals(plainString, decodedString, "Strings are not equal.")
+        val calculatedMd5 = md5(data.slice(plainString.encodeToByteArray().indices).toByteArray()).slice(0 until HASH_SIZE)
+        val md5FromData = data.slice(data.size - HASH_SIZE - 1 until data.size - 1)
+        assertEquals(calculatedMd5, md5FromData, "Hash invalid.")
+        assertEquals(plainFactory.encoder.getMode().toByte(), data[data.size - HASH_SIZE - 1 - 1], "Invalid mode.")
+    }
+
+    private fun testPaddedEncodeDecode(str: String) {
+        val pSmsEncryptor = PSmsEncryptor(plainFactory, paddedEncryptedFactory, encryptor)
+        val encoded = pSmsEncryptor.encode(str, ByteArray(0), 0)
+        val paddingSize = paddedEncryptedFactory.encoder.paddingSize
+        assertEquals(listOf(), encryptor.usedKeyEncrypt?.toList(), "Invalid used key.")
+        val encryptedEncoder = EncryptedDataEncoderMock()
+        checkPaddedEncryptedData(str, encryptedEncoder.decode(encoded.slice(paddingSize * 2 until encoded.length)))
+        assertTrue(pSmsEncryptor.isEncrypted(encoded, ByteArray(0)), "String must be encrypted.")
+        val decoded = pSmsEncryptor.decode(encoded, ByteArray(0), 0)
+        assertEquals(listOf(), encryptor.usedKeyDecrypt?.toList(), "Invalid used key.")
+        assertEquals(str, decoded, "Encoded and decoded strings are different.")
+        val tryDecoded = pSmsEncryptor.tryDecode(encoded, ByteArray(0))
+        assertEquals(str, tryDecoded, "Encoded and decoded by 'tryDecode' strings are different.")
+    }
+
+    private fun testEncodeDecodePadded(str: String) {
+        testPaddedEncodeDecode(str)
+    }
+
+    @Test
+    fun testPaddedEncodeDecodeEmpty() {
+        testEncodeDecodePadded("")
+    }
+
+    @Test
+    fun testPaddedEncodeDecodeSingleChar() {
+        testEncodeDecodePadded("a")
+    }
+
+    @Test
+    fun testPaddedEncodeDecodeLong() {
+        testEncodeDecodePadded("1234567890123456789012345678901234567890")
+    }
+
+    @Test
+    fun testPaddedEncodeDecodeUnicode() {
+        testEncodeDecodePadded("\uD83D\uDE02")
+    }
 }
