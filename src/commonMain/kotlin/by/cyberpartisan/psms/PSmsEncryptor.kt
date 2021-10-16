@@ -37,13 +37,27 @@ public class PSmsEncryptor {
 
     private fun pack(data: ByteArray): ByteArray {
         val hash = md5(data)
-        return data + byteArrayOf(plainDataEncoder!!.getMode().toByte()) + hash.slice(0 until HASH_SIZE)
+        var result = data + byteArrayOf(plainDataEncoder!!.getMode().toByte()) + hash.slice(0 until HASH_SIZE)
+        if (encryptedDataEncoder!!.hasFrontPadding()) {
+            result += byteArrayOf((result.size % 255).toByte())
+        }
+        return result
     }
 
     private fun unpack(data: ByteArray): ByteArray {
-        val payload = data.slice(0 until data.size - HASH_SIZE - 1)
+        var startPosition = 0
+        var endPosition = data.size - HASH_SIZE - 1
+        var sizeFieldSize = 0
+        if (encryptedDataEncoder!!.hasFrontPadding()) {
+            sizeFieldSize = 1
+            endPosition--
+            val actualSize = if (data.size % 255 > data.last()) data.size / 255 * 255 + data.last()
+                else (data.size / 255 - 1) * 255 + data.last()
+            startPosition = data.size - actualSize - sizeFieldSize
+        }
+        val payload = data.slice(startPosition until endPosition)
         val hash = md5(payload.toByteArray())
-        if (data.slice(data.size- HASH_SIZE until data.size) != hash.slice(0 until HASH_SIZE))
+        if (data.slice(data.size - HASH_SIZE - sizeFieldSize until data.size - sizeFieldSize) != hash.slice(0 until HASH_SIZE))
             throw InvalidSignatureException()
         plainDataEncoder = plainDataEncoderFactory.create(data[data.size - HASH_SIZE - 1].toInt())
         return payload.toByteArray()

@@ -27,6 +27,8 @@ class TextEncoder(
 
     private class RequirePadding: Exception() {}
 
+    override fun hasFrontPadding(): Boolean = true
+
     override fun encode(data: ByteArray): String {
         var dataCopy = data
         var actualData = dataCopy

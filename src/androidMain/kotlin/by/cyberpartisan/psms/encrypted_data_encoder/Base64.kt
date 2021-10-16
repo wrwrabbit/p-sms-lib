@@ -5,6 +5,8 @@ import java.util.Base64 as Java8Base64
 import org.apache.commons.codec.binary.Base64 as ApacheBase64
 
 actual class Base64 actual constructor() : EncryptedDataEncoder {
+    actual override fun hasFrontPadding(): Boolean = false
+
     actual override fun encode(data: ByteArray): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Java8Base64.getEncoder().encodeToString(data)
