@@ -13,7 +13,7 @@ class PSmsEncryptorTest {
     class PlainDataEncoderMock : PlainDataEncoder {
         override fun encode(s: String): ByteArray = s.encodeToByteArray()
         override fun decode(data: ByteArray): String = data.decodeToString()
-        override fun getMode(): Int = 42
+        override fun getMode(): Int = 42 and 0x0F
     }
 
     class PlainDataEncoderFactoryMock : PlainDataEncoderFactory {
@@ -32,9 +32,13 @@ class PSmsEncryptorTest {
         }
         override fun decode(str: String): ByteArray {
             assertEquals(0, str.length % 2, "String has odd length.")
-            return str.chunked(2)
-                .map { it.toInt(16).toByte() }
-                .toByteArray()
+            try {
+                return str.chunked(2)
+                    .map { it.toInt(16).toByte() }
+                    .toByteArray()
+            } catch (ignored: NumberFormatException) {
+                throw InvalidDataException()
+            }
         }
     }
 
@@ -62,30 +66,47 @@ class PSmsEncryptorTest {
 
     private fun createPSmsEncryptor(): PSmsEncryptor = PSmsEncryptor(plainFactory, encryptedFactory, encryptor)
 
-    private fun checkEncryptedData(plainString: String, data: ByteArray) {
+    private fun checkEncryptedData(message: Message, data: ByteArray) {
         val encoder = PlainDataEncoderMock()
-        val encodedStringSize = encoder.encode(plainString).size
-        assertEquals(encodedStringSize + 1 + HASH_SIZE, data.size, "Invalid data size.")
+        val encodedStringSize = encoder.encode(message.text).size
+        val channelIdSize = if (message.channelId != null) CHANNEL_ID_SIZE else 0
+        assertEquals(encodedStringSize + 1 + HASH_SIZE + channelIdSize, data.size, "Invalid data size.")
         val decodedString = encoder.decode(data.slice(0 until encodedStringSize).toByteArray())
-        assertEquals(plainString, decodedString, "Strings are not equal.")
-        val calculatedMd5 = md5(data.slice(plainString.encodeToByteArray().indices).toByteArray()).slice(0 until HASH_SIZE)
+        assertEquals(message.text, decodedString, "Strings are not equal.")
+        val payloadByteCount = message.text.encodeToByteArray().size + channelIdSize
+        val calculatedMd5 = md5(data.slice(0 until payloadByteCount).toByteArray()).slice(0 until HASH_SIZE)
         val md5FromData = data.slice(data.size - HASH_SIZE until data.size)
         assertEquals(calculatedMd5, md5FromData, "Hash invalid.")
-        assertEquals(plainFactory.encoder.getMode().toByte(), data[data.size - HASH_SIZE - 1], "Invalid mode.")
+        assertEquals(plainFactory.encoder.getMode(), data[data.size - HASH_SIZE - 1].toInt() and 0x0F, "Invalid mode.")
+        assertEquals(VERSION, (data[data.size - HASH_SIZE - 1].toInt() and 0x70) shr 4, "Invalid version.")
+        assertEquals(message.channelId != null, (data[data.size - HASH_SIZE - 1].toInt() and 0x80) != 0, "Invalid isChannel.")
+        if (message.channelId != null) {
+            val channelId = (((((data[data.size - HASH_SIZE - 1 - 1].toInt() shl 8) or
+                    data[data.size - HASH_SIZE - 1 - 2].toInt()) shl 8) or
+                    data[data.size - HASH_SIZE - 1 - 3].toInt()) shl 8) or
+                    data[data.size - HASH_SIZE - 1 - 4].toInt()
+            assertEquals(message.channelId, channelId, "Invalid channelId.")
+        }
     }
 
     private fun testEncodeDecode(str: String) {
+        testEncodeDecode(Message(str))
+    }
+
+    private fun testEncodeDecode(message: Message) {
         val pSmsEncryptor = createPSmsEncryptor()
-        val encoded = pSmsEncryptor.encode(str, ByteArray(0), 0)
+        val encoded = pSmsEncryptor.encode(message, ByteArray(0), 0)
         assertEquals(listOf(), encryptor.usedKeyEncrypt?.toList(), "Invalid used key.")
         val encryptedEncoder = EncryptedDataEncoderMock()
-        checkEncryptedData(str, encryptedEncoder.decode(encoded))
+        checkEncryptedData(message, encryptedEncoder.decode(encoded))
         assertTrue(pSmsEncryptor.isEncrypted(encoded, ByteArray(0)), "String must be encrypted.")
         val decoded = pSmsEncryptor.decode(encoded, ByteArray(0), 0)
         assertEquals(listOf(), encryptor.usedKeyDecrypt?.toList(), "Invalid used key.")
-        assertEquals(str, decoded, "Encoded and decoded strings are different.")
+        assertEquals(message.text, decoded.text, "Encoded and decoded strings are different.")
+        assertEquals(message.channelId, decoded.channelId, "Encoded and decoded channel ids are different.")
         val tryDecoded = pSmsEncryptor.tryDecode(encoded, ByteArray(0))
-        assertEquals(str, tryDecoded, "Encoded and decoded by 'tryDecode' strings are different.")
+        assertEquals(message.text, tryDecoded.text, "Encoded and decoded by 'tryDecode' strings are different.")
+        assertEquals(message.channelId, tryDecoded.channelId, "Encoded and decoded by 'tryDecode' channel ids are different.")
     }
 
     @Test
@@ -108,13 +129,18 @@ class PSmsEncryptorTest {
         testEncodeDecode("\uD83D\uDE02")
     }
 
+    @Test
+    fun testEncodeDecodeChannelId() {
+        testEncodeDecode(Message("1234567890123456789012345678901234567890", 42))
+    }
+
     private fun testModifiedEncrypted(modifyEncoded: (str: String) -> String) {
         val pSmsEncryptor = createPSmsEncryptor()
-        val encoded = pSmsEncryptor.encode("1234567890123456789012345678901234567890", ByteArray(0), 0)
+        val encoded = pSmsEncryptor.encode(Message("1234567890123456789012345678901234567890"), ByteArray(0), 0)
         val encodedModified = modifyEncoded(encoded)
         assertEquals(false, pSmsEncryptor.isEncrypted(encodedModified, ByteArray(0)), "Modification ignored by isEncrypted.")
-        assertEquals(encodedModified, pSmsEncryptor.tryDecode(encodedModified, ByteArray(0)), "Modification ignored by tryDecode.")
-        assertFailsWith<InvalidSignatureException> { pSmsEncryptor.decode(encodedModified, ByteArray(0), 0) }
+        assertEquals(encodedModified, pSmsEncryptor.tryDecode(encodedModified, ByteArray(0)).text, "Modification ignored by tryDecode.")
+        assertFailsWith<InvalidDataException> { pSmsEncryptor.decode(encodedModified, ByteArray(0), 0) }
     }
 
     @Test
@@ -130,7 +156,7 @@ class PSmsEncryptorTest {
     private fun testNotEncrypted(str: String) {
         val pSmsEncryptor = createPSmsEncryptor()
         assertEquals(false, pSmsEncryptor.isEncrypted(str, ByteArray(0)), "Not encrypted string ignored by isEncrypted.")
-        assertEquals(str, pSmsEncryptor.tryDecode(str, ByteArray(0)), "Not encrypted string ignored by tryDecode.")
+        assertEquals(str, pSmsEncryptor.tryDecode(str, ByteArray(0)).text, "Not encrypted string ignored by tryDecode.")
         assertFails { pSmsEncryptor.decode(str, ByteArray(0), 0) }
     }
 
@@ -141,7 +167,7 @@ class PSmsEncryptorTest {
 
     @Test
     fun testNotEncryptedRaw() {
-        testNotEncrypted("raw")
+        testNotEncrypted("raw1")
     }
 
     @Test
@@ -154,12 +180,26 @@ class PSmsEncryptorTest {
         testNotEncrypted("00000000")
     }
 
+    class EncryptorModifyVersionId : Encryptor {
+        override fun encrypt(key: ByteArray, plainData: ByteArray): ByteArray {
+            val metaInfo = MetaInfo.parse(plainData[plainData.size - HASH_SIZE - 1])
+            val changedMetaInfo = MetaInfo(metaInfo.mode, metaInfo.version + 1, metaInfo.isChannel)
+            return plainData.slice(0 until plainData.size - HASH_SIZE - 1).toByteArray() +
+                    byteArrayOf(changedMetaInfo.toByte()) +
+                    plainData.slice(plainData.size - HASH_SIZE until plainData.size)
+        }
+        override fun decrypt(key: ByteArray, encryptedData: ByteArray): ByteArray {
+            return encryptedData
+        }
+    }
+
     @Test
-    fun testStringMethods() {
-        val pSmsEncryptor = createPSmsEncryptor()
-        val encoded = pSmsEncryptor.encode("a", "key", 0)
-        assertEquals(pSmsEncryptor.tryDecode(encoded, "key"), "a", "Encoded and decoded strings are different.")
-        assertTrue(pSmsEncryptor.isEncrypted(encoded, "key"), "String must be encrypted.")
+    fun testInvalidVersionId() {
+        val pSmsEncryptor = PSmsEncryptor(plainFactory, encryptedFactory, EncryptorModifyVersionId())
+        val encoded = pSmsEncryptor.encode(Message("1234567890123456789012345678901234567890"), ByteArray(0), 0)
+        assertFailsWith<InvalidVersionException> { pSmsEncryptor.decode(encoded, ByteArray(0), 0) }
+        assertFailsWith<InvalidVersionException> { pSmsEncryptor.isEncrypted(encoded, ByteArray(0)) }
+        assertFailsWith<InvalidVersionException> { pSmsEncryptor.tryDecode(encoded, ByteArray(0)) }
     }
 
     class PaddingEncryptedDataEncoderMock : EncryptedDataEncoder {
@@ -198,7 +238,7 @@ class PSmsEncryptorTest {
 
     private fun testPaddedEncodeDecode(str: String) {
         val pSmsEncryptor = PSmsEncryptor(plainFactory, paddedEncryptedFactory, encryptor)
-        val encoded = pSmsEncryptor.encode(str, ByteArray(0), 0)
+        val encoded = pSmsEncryptor.encode(Message(str), ByteArray(0), 0)
         val paddingSize = paddedEncryptedFactory.encoder.paddingSize
         assertEquals(listOf(), encryptor.usedKeyEncrypt?.toList(), "Invalid used key.")
         val encryptedEncoder = EncryptedDataEncoderMock()
@@ -206,9 +246,11 @@ class PSmsEncryptorTest {
         assertTrue(pSmsEncryptor.isEncrypted(encoded, ByteArray(0)), "String must be encrypted.")
         val decoded = pSmsEncryptor.decode(encoded, ByteArray(0), 0)
         assertEquals(listOf(), encryptor.usedKeyDecrypt?.toList(), "Invalid used key.")
-        assertEquals(str, decoded, "Encoded and decoded strings are different.")
+        assertEquals(str, decoded.text, "Encoded and decoded strings are different.")
+        assertNull(decoded.channelId, "ChannelId not null.")
         val tryDecoded = pSmsEncryptor.tryDecode(encoded, ByteArray(0))
-        assertEquals(str, tryDecoded, "Encoded and decoded by 'tryDecode' strings are different.")
+        assertEquals(str, tryDecoded.text, "Encoded and decoded by 'tryDecode' strings are different.")
+        assertNull(tryDecoded.channelId, "ChannelId not null.")
     }
 
     private fun testEncodeDecodePadded(str: String) {

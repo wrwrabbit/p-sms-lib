@@ -1,6 +1,7 @@
 package by.cyberpartisan.psms.encrypted_data_encoder
 
 import android.os.Build
+import by.cyberpartisan.psms.InvalidDataException
 import java.util.Base64 as Java8Base64
 import org.apache.commons.codec.binary.Base64 as ApacheBase64
 
@@ -20,7 +21,7 @@ actual class Base64 actual constructor() : EncryptedDataEncoder {
             Java8Base64.getDecoder().decode(str)
         } else {
             if (!ApacheBase64.isBase64(str)) {
-                throw IllegalArgumentException("Not base64 string.")
+                throw InvalidDataException("Not base64 string.")
             }
             ApacheBase64.decodeBase64(str)
         }

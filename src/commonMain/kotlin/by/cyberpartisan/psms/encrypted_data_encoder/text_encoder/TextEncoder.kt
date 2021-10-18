@@ -1,5 +1,6 @@
 package by.cyberpartisan.psms.encrypted_data_encoder.text_encoder
 
+import by.cyberpartisan.psms.InvalidDataException
 import by.cyberpartisan.psms.encrypted_data_encoder.EncryptedDataEncoder
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -100,7 +101,7 @@ class TextEncoder(
                 }
             }
             if (decodeResult == null) {
-                throw IllegalArgumentException("'${str}' at $index is not in valid Text scheme")
+                throw InvalidDataException("'${str}' at $index is not in valid Text scheme")
             }
         }
         val resultBytes = coefficients.reversed().fold(BigInteger(0)){ acc, pair -> acc * pair.second + pair.first }.toByteArray()
