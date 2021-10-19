@@ -3,6 +3,7 @@ package by.cyberpartisan.psms
 import by.cyberpartisan.psms.encrypted_data_encoder.EncryptedDataEncoder
 import by.cyberpartisan.psms.encrypted_data_encoder.EncryptedDataEncoderFactory
 import by.cyberpartisan.psms.encryptor.Encryptor
+import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
 import kotlin.test.*
@@ -16,9 +17,10 @@ class PSmsEncryptorTest {
         override fun getMode(): Int = 42 and 0x0F
     }
 
-    class PlainDataEncoderFactoryMock : PlainDataEncoderFactory {
+    class PlainDataEncoderFactoryMock: PlainDataEncoderFactory {
         val encoder = PlainDataEncoderMock()
         override fun create(mode: Int): PlainDataEncoder = encoder
+        override fun create(mode: Mode): PlainDataEncoder = encoder
         override fun createBestEncoder(s: String): PlainDataEncoder = encoder
     }
 

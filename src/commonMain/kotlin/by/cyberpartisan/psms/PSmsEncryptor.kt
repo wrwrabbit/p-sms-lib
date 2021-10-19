@@ -6,6 +6,7 @@ import by.cyberpartisan.psms.encrypted_data_encoder.EncryptedDataEncoderFactoryI
 import by.cyberpartisan.psms.encrypted_data_encoder.Scheme
 import by.cyberpartisan.psms.encryptor.AesEncryptor
 import by.cyberpartisan.psms.encryptor.Encryptor
+import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactoryImpl
@@ -105,9 +106,21 @@ public class PSmsEncryptor {
     }
 
     public fun encode(message: Message, key: ByteArray, encryptionSchemeId: Int): String {
+        return encode(message, key, encryptionSchemeId, plainDataEncoderFactory.createBestEncoder(message.text))
+    }
+
+    public fun encode(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoderMode: Mode): String {
+        return encode(message, key, encryptionSchemeId, plainDataEncoderFactory.create(plainDataEncoderMode))
+    }
+
+    public fun encode(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoderMode: Int): String {
+        return encode(message, key, encryptionSchemeId, plainDataEncoderFactory.create(plainDataEncoderMode))
+    }
+
+    public fun encode (message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoder: PlainDataEncoder): String {
+        this.plainDataEncoder = plainDataEncoder
         encryptedDataEncoder = encryptedDataEncoderFactory.create(encryptionSchemeId)
-        plainDataEncoder = plainDataEncoderFactory.createBestEncoder(message.text)
-        val encoded = plainDataEncoder!!.encode(message.text)
+        val encoded = plainDataEncoder.encode(message.text)
         val binData = pack(encoded, message.channelId)
         val encryptedData = encryptor.encrypt(key, binData)
         return encryptedDataEncoder!!.encode(encryptedData)
