@@ -15,6 +15,11 @@ class PlainDataEncoderFactoryImpl: PlainDataEncoderFactory {
     }
 
     @ExperimentalUnsignedTypes
+    override fun create(mode: Mode): PlainDataEncoder {
+        return create(mode.ordinal)
+    }
+
+    @ExperimentalUnsignedTypes
     override fun createBestEncoder(s: String) : PlainDataEncoder {
         var minSize = Int.MAX_VALUE
         var minEncoder: PlainDataEncoder = Utf8()

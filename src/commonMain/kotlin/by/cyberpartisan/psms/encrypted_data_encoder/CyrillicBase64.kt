@@ -1,8 +1,12 @@
 package by.cyberpartisan.psms.encrypted_data_encoder
 
+import by.cyberpartisan.psms.InvalidDataException
+
 class CyrillicBase64 : EncryptedDataEncoder {
     private val cyrillic = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя"
     private val latin = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+
+    override fun hasFrontPadding(): Boolean = false
 
     override fun encode(data: ByteArray): String {
         val base64 = Base64().encode(data)
@@ -11,7 +15,7 @@ class CyrillicBase64 : EncryptedDataEncoder {
 
     override fun decode(str: String): ByteArray {
         if (!str.all { c -> cyrillic.contains(c) }) {
-            throw IllegalArgumentException("string is not in valid Cyrillic Base64 scheme")
+            throw InvalidDataException("string is not in valid Cyrillic Base64 scheme")
         }
         val base64 = str.map { c -> latin[cyrillic.indexOf(c)] }.toCharArray().concatToString()
         return Base64().decode(base64)
