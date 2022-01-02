@@ -229,13 +229,13 @@ class PSmsEncryptorTest {
     private fun checkPaddedEncryptedData(plainString: String, data: ByteArray) {
         val encoder = PlainDataEncoderMock()
         val encodedStringSize = encoder.encode(plainString).size
-        assertEquals(encodedStringSize + 1 + HASH_SIZE + 1, data.size, "Invalid data size.")
+        assertEquals(encodedStringSize + 1 + HASH_SIZE, data.size, "Invalid data size.")
         val decodedString = encoder.decode(data.slice(0 until encodedStringSize).toByteArray())
         assertEquals(plainString, decodedString, "Strings are not equal.")
         val calculatedMd5 = md5(data.slice(plainString.encodeToByteArray().indices).toByteArray()).slice(0 until HASH_SIZE)
-        val md5FromData = data.slice(data.size - HASH_SIZE - 1 until data.size - 1)
+        val md5FromData = data.slice(data.size - HASH_SIZE until data.size)
         assertEquals(calculatedMd5, md5FromData, "Hash invalid.")
-        assertEquals(plainFactory.encoder.getMode().toByte(), data[data.size - HASH_SIZE - 1 - 1], "Invalid mode.")
+        assertEquals(plainFactory.encoder.getMode().toByte(), data[data.size - HASH_SIZE - 1], "Invalid mode.")
     }
 
     private fun testPaddedEncodeDecode(str: String) {

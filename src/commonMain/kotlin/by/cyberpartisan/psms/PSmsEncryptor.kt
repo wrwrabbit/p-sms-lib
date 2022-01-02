@@ -69,33 +69,22 @@ public class PSmsEncryptor {
         val channelIdBytes = if (channelId != null) intToByteArray(channelId) else byteArrayOf()
         val payload = data + channelIdBytes
         val hash = md5(payload)
-        var result = payload + byteArrayOf(metaInfo.toByte()) + hash.slice(0 until HASH_SIZE)
-        if (encryptedDataEncoder!!.hasFrontPadding()) {
-            result += byteArrayOf((result.size % 255).toByte())
-        }
+        val result = payload + byteArrayOf(metaInfo.toByte()) + hash.slice(0 until HASH_SIZE)
         return result
     }
 
     private fun unpack(data: ByteArray): Pair<Int?, ByteArray> {
-        val hasFrontPadding = encryptedDataEncoder!!.hasFrontPadding()
-        var startPosition = 0
-        val sizeFieldSize = if (hasFrontPadding) 1 else 0
-        val endPosition = data.size - HASH_SIZE - 1 - sizeFieldSize
-        if (data.size < HASH_SIZE + 1 + sizeFieldSize) {
+        val endPosition = data.size - HASH_SIZE - 1
+        if (data.size < HASH_SIZE + 1) {
             throw InvalidDataException()
         }
-        if (hasFrontPadding) {
-            val actualSize = if (data.size % 255 > data.last()) data.size / 255 * 255 + data.last()
-                else (data.size / 255 - 1) * 255 + data.last()
-            startPosition = data.size - actualSize - sizeFieldSize
-        }
-        val payload = data.slice(startPosition until endPosition).toByteArray()
+        val payload = data.slice(0 until endPosition).toByteArray()
         val calculatedHash = md5(payload).slice(0 until HASH_SIZE)
-        val hashFromMessage = data.slice(data.size - HASH_SIZE - sizeFieldSize until data.size - sizeFieldSize)
+        val hashFromMessage = data.slice(data.size - HASH_SIZE until data.size)
         if (hashFromMessage != calculatedHash) {
             throw InvalidDataException()
         }
-        val metaInfo = MetaInfo.parse(data[data.size - HASH_SIZE - 1 - sizeFieldSize])
+        val metaInfo = MetaInfo.parse(data[data.size - HASH_SIZE - 1])
         validateMetaInfo(metaInfo, payload)
         plainDataEncoder = plainDataEncoderFactory.create(metaInfo.mode)
         val channelId = if (metaInfo.isChannel)
@@ -128,7 +117,22 @@ public class PSmsEncryptor {
 
     public fun decode(str: String, key: ByteArray, encryptionSchemeId: Int): Message {
         encryptedDataEncoder = encryptedDataEncoderFactory.create(encryptionSchemeId)
-        val raw = encryptedDataEncoder!!.decode(str)
+        var raw = encryptedDataEncoder!!.decode(str)
+        if (encryptedDataEncoder!!.hasFrontPadding()) {
+            do {
+                try {
+                    return decodeRaw(raw, key)
+                } catch (ignored: InvalidDataException) {
+                }
+                raw = raw.sliceArray(1 until raw.size)
+            } while (raw.isNotEmpty())
+            throw InvalidDataException()
+        } else {
+            return decodeRaw(raw, key)
+        }
+    }
+
+    private fun decodeRaw(raw: ByteArray, key: ByteArray): Message {
         val decrypted = encryptor.decrypt(key, raw)
         val (channelId, unpacked) = unpack(decrypted)
         return Message(plainDataEncoder!!.decode(unpacked), channelId)
