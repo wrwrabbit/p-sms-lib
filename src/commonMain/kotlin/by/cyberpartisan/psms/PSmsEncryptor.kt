@@ -10,6 +10,7 @@ import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactoryImpl
+import com.soywiz.krypto.HMAC
 
 const val HASH_SIZE = 2
 const val CHANNEL_ID_SIZE = 4
@@ -64,22 +65,40 @@ public class PSmsEncryptor {
                 (data[0].toInt() and 0xff)
     }
 
-    private fun pack(data: ByteArray, channelId: Int?): ByteArray {
+    private fun packLegacy(data: ByteArray, channelId: Int?): ByteArray {
+        return pack(data, channelId, ::md5)
+    }
+
+    private fun pack(data: ByteArray, key: ByteArray, channelId: Int?): ByteArray {
+        return pack(data, channelId) { d ->
+            HMAC.hmacSHA256(key, d).bytes
+        }
+    }
+
+    private fun pack(data: ByteArray, channelId: Int?, hash: (data: ByteArray) -> ByteArray): ByteArray {
         val metaInfo = createMetaInfo(plainDataEncoder!!.getMode(), channelId != null)
         val channelIdBytes = if (channelId != null) intToByteArray(channelId) else byteArrayOf()
         val payload = data + channelIdBytes
-        val hash = md5(payload)
-        val result = payload + byteArrayOf(metaInfo.toByte()) + hash.slice(0 until HASH_SIZE)
-        return result
+        return payload + byteArrayOf(metaInfo.toByte()) + hash(payload).slice(0 until HASH_SIZE)
     }
 
-    private fun unpack(data: ByteArray): Pair<Int?, ByteArray> {
+    private fun unpackLegacy(data: ByteArray): Pair<Int?, ByteArray>{
+        return unpack(data, ::md5)
+    }
+
+    private fun unpack(data: ByteArray, key: ByteArray): Pair<Int?, ByteArray> {
+        return unpack(data) { d ->
+            HMAC.hmacSHA256(key, d).bytes
+        }
+    }
+
+    private fun unpack(data: ByteArray, hash: (data: ByteArray) -> ByteArray): Pair<Int?, ByteArray> {
         val endPosition = data.size - HASH_SIZE - 1
         if (data.size < HASH_SIZE + 1) {
             throw InvalidDataException()
         }
         val payload = data.slice(0 until endPosition).toByteArray()
-        val calculatedHash = md5(payload).slice(0 until HASH_SIZE)
+        val calculatedHash = hash(payload).slice(0 until HASH_SIZE)
         val hashFromMessage = data.slice(data.size - HASH_SIZE until data.size)
         if (hashFromMessage != calculatedHash) {
             throw InvalidDataException()
@@ -94,6 +113,27 @@ public class PSmsEncryptor {
         return Pair(channelId, textBytes)
     }
 
+    public fun encodeLegacy(message: Message, key: ByteArray, encryptionSchemeId: Int): String {
+        return encodeLegacy(message, key, encryptionSchemeId, plainDataEncoderFactory.createBestEncoder(message.text))
+    }
+
+    public fun encodeLegacy(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoderMode: Mode): String {
+        return encodeLegacy(message, key, encryptionSchemeId, plainDataEncoderFactory.create(plainDataEncoderMode))
+    }
+
+    public fun encodeLegacy(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoderMode: Int): String {
+        return encodeLegacy(message, key, encryptionSchemeId, plainDataEncoderFactory.create(plainDataEncoderMode))
+    }
+
+    public fun encodeLegacy(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoder: PlainDataEncoder): String {
+        this.plainDataEncoder = plainDataEncoder
+        encryptedDataEncoder = encryptedDataEncoderFactory.create(encryptionSchemeId)
+        val encoded = plainDataEncoder.encode(message.text)
+        val binData = packLegacy(encoded, message.channelId)
+        val encryptedData = encryptor.encrypt(key, binData)
+        return encryptedDataEncoder!!.encode(encryptedData)
+    }
+
     public fun encode(message: Message, key: ByteArray, encryptionSchemeId: Int): String {
         return encode(message, key, encryptionSchemeId, plainDataEncoderFactory.createBestEncoder(message.text))
     }
@@ -106,13 +146,36 @@ public class PSmsEncryptor {
         return encode(message, key, encryptionSchemeId, plainDataEncoderFactory.create(plainDataEncoderMode))
     }
 
-    public fun encode (message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoder: PlainDataEncoder): String {
+    public fun encode(message: Message, key: ByteArray, encryptionSchemeId: Int, plainDataEncoder: PlainDataEncoder): String {
         this.plainDataEncoder = plainDataEncoder
         encryptedDataEncoder = encryptedDataEncoderFactory.create(encryptionSchemeId)
         val encoded = plainDataEncoder.encode(message.text)
-        val binData = pack(encoded, message.channelId)
+        val binData = pack(encoded, key, message.channelId)
         val encryptedData = encryptor.encrypt(key, binData)
         return encryptedDataEncoder!!.encode(encryptedData)
+    }
+
+    public fun decodeLegacy(str: String, key: ByteArray, encryptionSchemeId: Int): Message {
+        encryptedDataEncoder = encryptedDataEncoderFactory.create(encryptionSchemeId)
+        var raw = encryptedDataEncoder!!.decode(str)
+        if (encryptedDataEncoder!!.hasFrontPadding()) {
+            do {
+                try {
+                    return decodeRawLegacy(raw, key)
+                } catch (ignored: InvalidDataException) {
+                }
+                raw = raw.sliceArray(1 until raw.size)
+            } while (raw.isNotEmpty())
+            throw InvalidDataException()
+        } else {
+            return decodeRawLegacy(raw, key)
+        }
+    }
+
+    private fun decodeRawLegacy(raw: ByteArray, key: ByteArray): Message {
+        val decrypted = encryptor.decrypt(key, raw)
+        val (channelId, unpacked) = unpackLegacy(decrypted)
+        return Message(plainDataEncoder!!.decode(unpacked), channelId, true)
     }
 
     public fun decode(str: String, key: ByteArray, encryptionSchemeId: Int): Message {
@@ -134,7 +197,7 @@ public class PSmsEncryptor {
 
     private fun decodeRaw(raw: ByteArray, key: ByteArray): Message {
         val decrypted = encryptor.decrypt(key, raw)
-        val (channelId, unpacked) = unpack(decrypted)
+        val (channelId, unpacked) = unpack(decrypted, key)
         return Message(plainDataEncoder!!.decode(unpacked), channelId)
     }
 
@@ -142,6 +205,11 @@ public class PSmsEncryptor {
         for (scheme in Scheme.values()) {
             try {
                 decode(str, key, scheme.ordinal)
+                return true
+            } catch (ignored: InvalidDataException) {
+            }
+            try {
+                decodeLegacy(str, key, scheme.ordinal)
                 return true
             } catch (ignored: InvalidDataException) {
             }
@@ -153,6 +221,10 @@ public class PSmsEncryptor {
         for (scheme in Scheme.values()) {
             try {
                 return decode(str, key, scheme.ordinal)
+            } catch (ignored: InvalidDataException) {
+            }
+            try {
+                return decodeLegacy(str, key, scheme.ordinal)
             } catch (ignored: InvalidDataException) {
             }
         }
