@@ -14,7 +14,7 @@ import com.soywiz.krypto.HMAC
 
 const val HASH_SIZE = 2
 const val CHANNEL_ID_SIZE = 4
-const val VERSION = 0
+const val VERSION = 1
 
 public class PSmsEncryptor {
     private val plainDataEncoderFactory: PlainDataEncoderFactory
