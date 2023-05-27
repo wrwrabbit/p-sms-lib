@@ -38,7 +38,8 @@ public class PSmsEncryptor {
         this.encryptor = encryptor
     }
 
-    private fun createMetaInfo(mode: Int, isChannel: Boolean): MetaInfo = MetaInfo(mode, VERSION, isChannel)
+    private fun createMetaInfo(mode: Int, isChannel: Boolean, isLegacy: Boolean): MetaInfo
+        = MetaInfo(mode, if (isLegacy) 0 else VERSION, isChannel)
 
     private fun validateMetaInfo(metaInfo: MetaInfo, payload: ByteArray) {
         if (metaInfo.version > VERSION) {
@@ -66,17 +67,17 @@ public class PSmsEncryptor {
     }
 
     private fun packLegacy(data: ByteArray, channelId: Int?): ByteArray {
-        return pack(data, channelId, ::md5)
+        return pack(data, channelId, true, ::md5)
     }
 
     private fun pack(data: ByteArray, key: ByteArray, channelId: Int?): ByteArray {
-        return pack(data, channelId) { d ->
+        return pack(data, channelId, false) { d ->
             HMAC.hmacSHA256(key, d).bytes
         }
     }
 
-    private fun pack(data: ByteArray, channelId: Int?, hash: (data: ByteArray) -> ByteArray): ByteArray {
-        val metaInfo = createMetaInfo(plainDataEncoder!!.getMode(), channelId != null)
+    private fun pack(data: ByteArray, channelId: Int?, isLegacy: Boolean, hash: (data: ByteArray) -> ByteArray): ByteArray {
+        val metaInfo = createMetaInfo(plainDataEncoder!!.getMode(), channelId != null, isLegacy)
         val channelIdBytes = if (channelId != null) intToByteArray(channelId) else byteArrayOf()
         val payload = data + channelIdBytes
         return payload + byteArrayOf(metaInfo.toByte()) + hash(payload).slice(0 until HASH_SIZE)
