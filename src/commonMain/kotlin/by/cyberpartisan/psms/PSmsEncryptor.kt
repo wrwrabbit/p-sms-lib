@@ -10,7 +10,7 @@ import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactoryImpl
-import com.soywiz.krypto.HMAC
+import korlibs.crypto.HMAC
 
 const val HASH_SIZE = 2
 const val CHANNEL_ID_SIZE = 4

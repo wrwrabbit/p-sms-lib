@@ -3,9 +3,9 @@ package by.cyberpartisan.psms.plain_data_encoder
 @ExperimentalUnsignedTypes
 class ShortCp1251Latin : ShortEncoder() {
     override fun encodeChar(char: Char): Code {
-        val value =  when(char.toLowerCase().toInt()) {
+        val value =  when(char.lowercaseChar().toInt()) {
             in 0x20..0x7E -> char.toInt()
-            in 'а'.toInt()..'я'.toInt() -> char.toLowerCase().toInt() - 'а'.toInt() // special chars
+            in 'а'.toInt()..'я'.toInt() -> char.lowercaseChar().toInt() - 'а'.toInt() // special chars
             'ё'.toInt() -> 0x7F // del
             else -> '?'.toInt()
         }

@@ -1,6 +1,6 @@
 package by.cyberpartisan.psms
 
-import com.soywiz.krypto.MD5
+import korlibs.crypto.MD5
 
 public fun md5(arr: ByteArray): ByteArray {
     val md5 = MD5()

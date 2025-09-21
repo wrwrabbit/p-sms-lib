@@ -6,7 +6,7 @@ import by.cyberpartisan.psms.encryptor.Encryptor
 import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
-import com.soywiz.krypto.HMAC
+import korlibs.crypto.HMAC
 import kotlin.test.*
 
 @ExperimentalUnsignedTypes

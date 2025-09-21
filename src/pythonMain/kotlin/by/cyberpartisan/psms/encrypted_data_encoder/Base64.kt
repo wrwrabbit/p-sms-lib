@@ -4,10 +4,10 @@ actual class Base64 : EncryptedDataEncoder {
     actual override fun hasFrontPadding(): Boolean = false
 
     actual override fun encode(data: ByteArray): String {
-        return com.soywiz.krypto.encoding.Base64.encode(data)
+        return korlibs.crypto.encoding.Base64.encode(data)
     }
 
     actual override fun decode(str: String): ByteArray {
-        return com.soywiz.krypto.encoding.Base64.decode(str)
+        return korlibs.crypto.encoding.Base64.decode(str)
     }
 }

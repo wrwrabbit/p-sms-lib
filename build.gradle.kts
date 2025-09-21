@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.5.10"
+    kotlin("multiplatform") version "2.2.20"
     id("com.android.library")
 }
 
@@ -8,19 +8,20 @@ version = "1.0"
 
 repositories {
     google()
-    jcenter()
     mavenCentral()
 }
 
 kotlin {
-    iosArm64("ios") {
-        binaries {
-            framework {
-                baseName = "p_sms"
-            }
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "p_sms"
         }
     }
-    android()
+    androidTarget()
     linuxX64("python") {
         binaries {
             sharedLib {
@@ -31,8 +32,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("com.ionspin.kotlin:bignum:0.3.1")
-                implementation("com.soywiz.korlibs.krypto:krypto:2.1.1")
+                implementation("com.ionspin.kotlin:bignum:0.3.10")
+                implementation("com.soywiz.korlibs.krypto:krypto:4.0.10")
             }
         }
         val commonTest by getting {
@@ -47,19 +48,29 @@ kotlin {
                 implementation( "commons-codec:commons-codec:1.15")
             }
         }
-        val androidTest by getting {
+        val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
                 implementation("junit:junit:4.13")
             }
         }
-        val iosMain by getting {
+        val iosMain by creating {
             dependsOn(commonMain)
+        }
+        val iosArm64Main by getting {
+            dependsOn(iosMain)
+        }
+        val iosX64Main by getting {
+            dependsOn(iosMain)
+        }
+        val iosSimulatorArm64Main by getting {
+            dependsOn(iosMain)
         }
     }
 }
 
 android {
+    namespace = "by.cyberpartisan.psms"
     compileSdkVersion(29)
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {

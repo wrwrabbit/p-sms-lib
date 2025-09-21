@@ -4,7 +4,7 @@ package by.cyberpartisan.psms.plain_data_encoder
 class ShortCp1251Cyrillic : ShortEncoder() {
     override fun encodeChar(char: Char): Code {
         val value = when(char.toInt()) {
-            in 0x20..0x7E -> char.toLowerCase().toInt()
+            in 0x20..0x7E -> char.lowercaseChar().toInt()
             in 'а'.toInt()..'я'.toInt() -> char.toInt() - 'а'.toInt() // special chars
             'ё'.toInt() -> 0x7F // del
             in 'А'.toInt()..'И'.toInt() -> char.toInt() - 'А'.toInt() + 'A'.toInt() // A - I
