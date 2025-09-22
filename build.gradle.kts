@@ -29,6 +29,9 @@ kotlin {
             }
         }
     }
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -44,38 +47,29 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                implementation("com.google.android.material:material:1.2.1")
-                implementation( "commons-codec:commons-codec:1.15")
+                implementation("com.google.android.material:material:1.13.0")
+                implementation("commons-codec:commons-codec:1.19.0")
             }
         }
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13")
+                implementation("junit:junit:4.13.2")
             }
         }
-        val iosMain by creating {
-            dependsOn(commonMain)
-        }
-        val iosArm64Main by getting {
-            dependsOn(iosMain)
-        }
-        val iosX64Main by getting {
-            dependsOn(iosMain)
-        }
-        val iosSimulatorArm64Main by getting {
-            dependsOn(iosMain)
-        }
+        val iosMain by creating
+        val iosArm64Main by getting
+        val iosX64Main by getting
+        val iosSimulatorArm64Main by getting
     }
 }
 
 android {
     namespace = "by.cyberpartisan.psms"
-    compileSdkVersion(29)
+    compileSdkVersion(36)
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
-        minSdkVersion(21)
-        targetSdkVersion(29)
+        minSdk { version = release(21) }
     }
 
 }
