@@ -6,11 +6,11 @@ class Cp1251 : PlainDataEncoder {
     override fun encode(s: String): ByteArray = s.map(this::encodeChar).toByteArray()
 
     private fun encodeChar(char: Char): Byte {
-        if (char.toInt() <= 0x7F) {
-            return char.toByte()
+        if (char.code <= 0x7F) {
+            return char.code.toByte()
         }
         val index = upperCharset.indexOf(char)
-        return if (index != -1) (0x80 + index).toByte() else '?'.toByte()
+        return if (index != -1) (0x80 + index).toByte() else '?'.code.toByte()
     }
 
     override fun decode(data: ByteArray): String = data.map(this::decodeChar).joinToString("")
@@ -18,7 +18,7 @@ class Cp1251 : PlainDataEncoder {
     private fun decodeChar(code: Byte): Char {
         val intCode = code.toInt() and 0xFF
         if (intCode <= 0x7F) {
-            return code.toChar()
+            return code.toInt().toChar()
         }
         return upperCharset[intCode - 0x80]
     }

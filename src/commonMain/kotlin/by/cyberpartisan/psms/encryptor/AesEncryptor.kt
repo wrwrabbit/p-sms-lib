@@ -1,8 +1,8 @@
 package by.cyberpartisan.psms.encryptor
 import by.cyberpartisan.psms.InvalidDataException
-import com.soywiz.krypto.AES
+import korlibs.crypto.AES
 import kotlin.random.Random
-import com.soywiz.krypto.Padding
+import korlibs.crypto.Padding
 
 const val IV_SIZE = 4
 

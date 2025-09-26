@@ -1,5 +1,5 @@
 plugins {
-    kotlin("multiplatform") version "1.5.10"
+    kotlin("multiplatform") version "2.2.20"
     id("com.android.library")
 }
 
@@ -8,19 +8,20 @@ version = "1.0"
 
 repositories {
     google()
-    jcenter()
     mavenCentral()
 }
 
 kotlin {
-    iosArm64("ios") {
-        binaries {
-            framework {
-                baseName = "p_sms"
-            }
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "p_sms"
         }
     }
-    android()
+    androidTarget()
     linuxX64("python") {
         binaries {
             sharedLib {
@@ -28,11 +29,14 @@ kotlin {
             }
         }
     }
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("com.ionspin.kotlin:bignum:0.3.1")
-                implementation("com.soywiz.korlibs.krypto:krypto:2.1.1")
+                implementation("com.ionspin.kotlin:bignum:0.3.10")
+                implementation("com.soywiz.korlibs.krypto:krypto:4.0.10")
             }
         }
         val commonTest by getting {
@@ -43,28 +47,29 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                implementation("com.google.android.material:material:1.2.1")
-                implementation( "commons-codec:commons-codec:1.15")
+                implementation("com.google.android.material:material:1.13.0")
+                implementation("commons-codec:commons-codec:1.19.0")
             }
         }
-        val androidTest by getting {
+        val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13")
+                implementation("junit:junit:4.13.2")
             }
         }
-        val iosMain by getting {
-            dependsOn(commonMain)
-        }
+        val iosMain by creating
+        val iosArm64Main by getting
+        val iosX64Main by getting
+        val iosSimulatorArm64Main by getting
     }
 }
 
 android {
-    compileSdkVersion(29)
+    namespace = "by.cyberpartisan.psms"
+    compileSdkVersion(36)
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
-        minSdkVersion(21)
-        targetSdkVersion(29)
+        minSdk { version = release(21) }
     }
 
 }

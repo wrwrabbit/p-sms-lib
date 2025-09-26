@@ -6,7 +6,7 @@ import by.cyberpartisan.psms.encryptor.Encryptor
 import by.cyberpartisan.psms.plain_data_encoder.Mode
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoder
 import by.cyberpartisan.psms.plain_data_encoder.PlainDataEncoderFactory
-import com.soywiz.krypto.HMAC
+import korlibs.crypto.HMAC
 import kotlin.test.*
 
 @ExperimentalUnsignedTypes
@@ -80,9 +80,10 @@ class PSmsEncryptorTest {
         val calculatedHash = hash(data.slice(0 until payloadByteCount).toByteArray()).slice(0 until HASH_SIZE)
         val hashFromData = data.slice(data.size - HASH_SIZE until data.size)
         assertEquals(calculatedHash, hashFromData, "Hash invalid.")
-        assertEquals(plainFactory.encoder.getMode(), data[data.size - HASH_SIZE - 1].toInt() and 0x0F, "Invalid mode.")
-        assertEquals(VERSION, (data[data.size - HASH_SIZE - 1].toInt() and 0x70) shr 4, "Invalid version.")
-        assertEquals(message.channelId != null, (data[data.size - HASH_SIZE - 1].toInt() and 0x80) != 0, "Invalid isChannel.")
+        val metaInfo = MetaInfo.parse(data[data.size - HASH_SIZE - 1].toInt().toByte())
+        assertEquals(plainFactory.encoder.getMode(), metaInfo.mode, "Invalid mode.")
+        assertEquals(if (message.isLegacy) 0 else VERSION, metaInfo.version, "Invalid version.")
+        assertEquals(message.channelId != null, metaInfo.isChannel, "Invalid isChannel.")
         if (message.channelId != null) {
             val channelId = (((((data[data.size - HASH_SIZE - 1 - 1].toInt() shl 8) or
                     data[data.size - HASH_SIZE - 1 - 2].toInt()) shl 8) or
@@ -265,7 +266,7 @@ class PSmsEncryptorTest {
 
     private val paddedEncryptedFactory = PaddedEncryptedDataEncoderFactoryMock()
 
-    private fun checkPaddedEncryptedData(plainString: String, data: ByteArray, hash: (data: ByteArray) -> ByteArray) {
+    private fun checkPaddedEncryptedData(plainString: String, legacy: Boolean, data: ByteArray, hash: (data: ByteArray) -> ByteArray) {
         val encoder = PlainDataEncoderMock()
         val encodedStringSize = encoder.encode(plainString).size
         assertEquals(encodedStringSize + 1 + HASH_SIZE, data.size, "Invalid data size.")
@@ -274,7 +275,9 @@ class PSmsEncryptorTest {
         val calculatedHash = hash(data.slice(plainString.encodeToByteArray().indices).toByteArray()).slice(0 until HASH_SIZE)
         val hashFromData = data.slice(data.size - HASH_SIZE until data.size)
         assertEquals(calculatedHash, hashFromData, "Hash invalid.")
-        assertEquals(plainFactory.encoder.getMode().toByte(), data[data.size - HASH_SIZE - 1], "Invalid mode.")
+        val metaInfo = MetaInfo.parse(data[data.size - HASH_SIZE - 1])
+        assertEquals(if (legacy) 0 else VERSION, metaInfo.version, "Invalid version.")
+        assertEquals(plainFactory.encoder.getMode(), metaInfo.mode, "Invalid mode.")
     }
 
     private fun testPaddedEncodeDecode(str: String, legacy: Boolean) {
@@ -285,7 +288,7 @@ class PSmsEncryptorTest {
         val paddingSize = paddedEncryptedFactory.encoder.paddingSize
         assertEquals(listOf(), encryptor.usedKeyEncrypt?.toList(), "Invalid used key.")
         val encryptedEncoder = EncryptedDataEncoderMock()
-        checkPaddedEncryptedData(str, encryptedEncoder.decode(encoded.slice(paddingSize * 2 until encoded.length))) { d ->
+        checkPaddedEncryptedData(str, legacy, encryptedEncoder.decode(encoded.slice(paddingSize * 2 until encoded.length))) { d ->
             if (legacy) {
                 md5(d)
             } else {

@@ -1,7 +1,7 @@
 package by.cyberpartisan.psms
 
 import by.cyberpartisan.psms.encrypted_data_encoder.Scheme
-import com.soywiz.krypto.encoding.Base64
+import korlibs.crypto.encoding.Base64
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals

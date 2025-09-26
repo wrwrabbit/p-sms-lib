@@ -3,9 +3,9 @@ package by.cyberpartisan.psms.plain_data_encoder
 @ExperimentalUnsignedTypes
 class Ascii : ShortEncoder() {
     override fun encodeChar(char: Char): Code {
-        val value =  when(char.toLowerCase().toInt()) {
-            in 0x00..0x7F -> char.toInt()
-            else -> '?'.toInt()
+        val value =  when(char.lowercaseChar().code) {
+            in 0x00..0x7F -> char.code
+            else -> '?'.code
         }
         return Code(value, decodingShifting)
     }
